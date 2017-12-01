@@ -29,6 +29,8 @@
     "glob": "^7.1.2",
     "jsonwebtoken": "^8.1.0",
     "knex": "^0.14.2",
-    "mysql": "^2.15.0"
+    "mysql": "^2.15.0",
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5"
   }
 }
