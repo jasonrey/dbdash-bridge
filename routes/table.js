@@ -2,6 +2,20 @@ const express = require('express')
 const router = express.Router()
 const db = require('../entities/db')
 
+const buildRules = (query, rules) => {
+  return rules.map(rule => {
+    if (rule.type === 'condition') {
+      query[rule.connector === 'or' ? 'orWhere' : 'where'](rule.column, rule.comparison, rule.raw ? db.raw(rule.value) : rule.value)
+    }
+
+    if (rule.type === 'conditions') {
+      query[rule.connector === 'or' ? 'orWhere' : 'where'](function () {
+        buildRules(this, rule.rules)
+      })
+    }
+  })
+}
+
 router.get('/tables', async (req, res, next) => {
   const [result, fields] = await db.raw('show tables')
 
@@ -32,17 +46,24 @@ router.get('/table/:table/columns', async (req, res, next) => {
   }
 })
 
-router.get('/table/:table/records', async (req, res, next) => {
-  const payload = JSON.parse(req.query.payload) || {}
+router.post('/table/:table/records/:mode?', async (req, res, next) => {
+  const rules = JSON.parse(req.body.rules)
 
   const query = db(req.params.table)
 
-  if (payload.limit) {
-    query.limit(payload.limit)
+  if (req.body.limit) {
+    query.limit(req.body.limit)
   }
 
-  if (payload.offset) {
-    query.offset(payload.offset)
+  if (req.body.offset) {
+    query.offset(req.body.offset)
+  }
+
+  buildRules(query, rules)
+
+  if (req.params.mode === 'sql') {
+    res.json(query.toSQL())
+    return res.end()
   }
 
   const result = await query
@@ -51,12 +72,23 @@ router.get('/table/:table/records', async (req, res, next) => {
   return res.end()
 })
 
-router.get('/table/:table/records/count', async (req, res, next) => {
-  // const payload = JSON.parse(req.query.payload) || {}
+router.post('/table/:table/aggregate/:mode?', async (req, res, next) => {
+  const rules = JSON.parse(req.body.rules)
+  const aggregate = req.body.aggregate || 'count'
+  const column = req.body.column || '*'
 
   const query = db(req.params.table)
 
-  query.count('* as total').first()
+  query[aggregate](`${column} as total`)
+
+  query.first()
+
+  buildRules(query, rules)
+
+  if (req.params.mode === 'sql') {
+    res.json(query.toSQL())
+    return res.end()
+  }
 
   const result = await query
 
