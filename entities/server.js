@@ -8,14 +8,22 @@ if (!process.env.PROJECTKEY) {
   throw new Error('PROJECTKEY not defined.')
 }
 
-const app = require('./app')
-const http = require('http')
-const port = process.env.APP_PORT || 3000
+module.exports = (async () => {
+  if (process.env.TUNNEL_HOST) {
+    await require('./tunnel')()
 
-const server = http.createServer(app)
+    console.log(`Tunnel established at port: ${process.env.TUNNEL_LOCAL_PORT}`)
+  }
 
-server.listen(port, () => {
-  console.info(`Bridge started on port ${port}`)
-})
+  const app = require('./app')
+  const http = require('http')
+  const port = process.env.APP_PORT || 3000
 
-module.exports = server
+  const server = http.createServer(app)
+
+  server.listen(port, () => {
+    console.info(`Bridge started on port ${port}`)
+  })
+
+  return server
+})()

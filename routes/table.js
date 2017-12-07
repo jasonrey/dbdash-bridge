@@ -5,7 +5,7 @@ const db = require('../entities/db')
 const buildRules = (query, rules) => {
   return rules.map(rule => {
     if (rule.type === 'condition') {
-      query[rule.connector === 'or' ? 'orWhere' : 'where'](rule.column, rule.comparison, rule.raw ? db.raw(rule.value) : rule.value)
+      query[rule.connector === 'or' ? 'orWhere' : 'where'](rule.column, rule.comparison, rule.raw ? db().raw(rule.value) : rule.value)
     }
 
     if (rule.type === 'conditions') {
@@ -17,7 +17,7 @@ const buildRules = (query, rules) => {
 }
 
 router.get('/tables', async (req, res, next) => {
-  const [result, fields] = await db.raw('show tables')
+  const [result, fields] = await db().raw('show tables')
 
   res.json(result.map(item => item[fields[0].name]))
   res.end()
@@ -25,7 +25,7 @@ router.get('/tables', async (req, res, next) => {
 
 router.get('/table/:table/columns', async (req, res, next) => {
   try {
-    const [result] = await db.raw('show columns from ??', [req.params.table])
+    const [result] = await db().raw('show columns from ??', [req.params.table])
 
     const fields = result.map(field => {
       return {
