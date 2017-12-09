@@ -18,7 +18,8 @@ module.exports = async () => {
     localAddr: process.env.TUNNEL_LOCAL_HOST,
     localPort: process.env.TUNNEL_LOCAL_PORT,
     readyTimeout: process.env.TUNNEL_READY_TIMEOUT || 3000,
-    forwardTimeout: process.env.TUNNEL_FORWARD_TIMEOUT || 3000
+    forwardTimeout: process.env.TUNNEL_FORWARD_TIMEOUT || 3000,
+    keepaliveInterval: process.env.TUNNEL_KEEPALIVE || 30000
   }
 
   if (!process.env.TUNNEL_PASSWORD && !process.env.TUNNEL_PRIVATE_KEY) {
