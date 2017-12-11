@@ -1,20 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const db = require('../entities/db')
-
-const buildRules = (query, rules) => {
-  return rules.map(rule => {
-    if (rule.type === 'condition') {
-      query[rule.connector === 'or' ? 'orWhere' : 'where'](rule.column, rule.comparison, rule.raw ? db().raw(rule.value) : rule.value)
-    }
-
-    if (rule.type === 'conditions') {
-      query[rule.connector === 'or' ? 'orWhere' : 'where'](function () {
-        buildRules(this, rule.rules)
-      })
-    }
-  })
-}
+const buildRules = require('../helpers/rules')
+const buildFilters = require('../helpers/filters')
 
 router.get('/tables', async (req, res, next) => {
   const [result, fields] = await db().raw('show tables')
@@ -59,7 +47,16 @@ router.post('/table/:table/records/:mode?', async (req, res, next) => {
     query.offset(req.body.offset)
   }
 
-  buildRules(query, rules)
+  if (rules && rules.length) {
+    buildRules(query, [{
+      type: 'conditions',
+      rules
+    }])
+  }
+
+  if (req.body.filters && req.body.filters.length) {
+    buildFilters(query, req.body.filters)
+  }
 
   if (req.params.mode === 'sql') {
     res.json(query.toSQL())
